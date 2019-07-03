@@ -50,9 +50,9 @@ class Yayaya {
             stopAnimation: {},
             lastTick: 0,
             tickLength: 20,
-            tickCnt: 0
+            tickCnt: 0,
+            velocity: 2
         }
-        this.movingTime = 2;
     }
 
     init() {
@@ -62,7 +62,6 @@ class Yayaya {
         this.wrapper.append(this.canvas);
         this.ctx = this.canvas.getContext('2d');
         this.initYa();
-
     }
 
     main(tFrame) {
@@ -71,8 +70,7 @@ class Yayaya {
         if (this.renderData.lastTick + this.renderData.tickLength <= tFrame) {
             this.renderData.lastTick = tFrame;
             this.renderData.tickCnt = this.renderData.tickCnt + 1;
-            if (this.checkEndedMoving()) {
-                debugger;
+            if (this.checkEndedMoving() || !this.yas.some(ya => ya.isMoving)) {
                 this.changePosition();
                 this.moveYa();
             } else {
@@ -82,7 +80,10 @@ class Yayaya {
     }
 
     changePosition() {
-        console.log('changePosition');
+        if (this.renderData.velocity > 0.1) {
+            this.renderData.velocity -= 0.1;
+        }
+        console.log(this.renderData.velocity);
         const shuffledArray = shuffleArray(this.yas.map(ya => ya.position));
         shuffledArray.forEach((v, idx) => {
             const ya = this.yas[idx];
@@ -90,35 +91,28 @@ class Yayaya {
             ya.position = v;
             ya.movingPerFrame =
                 ((this.absolutePositionValue[ya.position - 1].x - this.absolutePositionValue[ya.prevPosition - 1].x) /
-                (this.renderData.tickLength));
+                (this.renderData.tickLength * this.renderData.velocity));
             if (ya.prevPosition !== ya.position) {
                 ya.isMoving = true;
             } else {
                 ya.isMoving = false;
             }
         });
-        this.yas.forEach((ya, index) => {
-            ya.x = this.absolutePositionValue[index].x;
-            ya.y = this.absolutePositionValue[index].y;
-        })
     }
 
     checkEndedMoving() {
-        return !this.yas
+        console.table(this.yas);
+        return this.yas
             .filter(ya => ya.isMoving)
             .some(ya => {
-                console.table({
-                    ya: ya.x,
-                    absol: this.absolutePositionValue[ya.position - 1].x
-                })
-                return ya.x + 1 > this.absolutePositionValue[ya.position - 1].x && ya.x - 1 < this.absolutePositionValue[ya.position - 1].x
+                const destPosition = this.absolutePositionValue[ya.position - 1];
+                return ya.x < destPosition.x + 1 && ya.x > destPosition.x - 1;
             });
     }
 
     moveYa() {
         this.yas.forEach(ya => {
-            const movingX = ya.movingPerFrame;
-            ya.x = ya.x + movingX;
+            ya.x = ya.x + ya.movingPerFrame;;
         });
         this.drawYa();
      }
@@ -128,6 +122,7 @@ class Yayaya {
          this.yaImage.onload = () => {
              this.setPosition();
              this.drawYa();
+             this.changePosition();
              this.main(performance.now());
          };
          this.yaImage.src = './cup.png';
@@ -155,7 +150,6 @@ class Yayaya {
             this.absolutePositionValue[index].x = x;
             this.absolutePositionValue[index].y = y;
         });
-        console.log(this.absolutePositionValue);
     }
 }
 
