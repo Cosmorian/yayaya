@@ -1,58 +1,21 @@
-import { shuffleArray } from "./util.js";
+import { shuffleArray } from './util.js';
+import Ya from './ya.js';
+import Ball from './ball.js';
 
 class Yayaya {
     constructor() {
         this.wrapper = document.getElementsByClassName('wrapper')[0];
-        this.yas = [
-            {
-                name: 'ya1',
-                x: 0,
-                y: 0,
-                prevPosition: 0,
-                position: 1,
-                movingPerFrame: 0,
-                isMoving: false
-            },
-            {
-                name: 'ya2',
-                x: 0,
-                y: 0,
-                prevPosition: 0,
-                position: 2,
-                movingPerFrame: 0,
-                isMoving: false
-            },
-            {
-                name: 'ya3',
-                x: 0,
-                y: 0,
-                prevPosition: 0,
-                position: 3,
-                movingPerFrame: 0,
-                isMoving: false
-            }
-        ];
-        this.absolutePositionValue = [
-            {
-                x: 0,
-                y: 0,
-            },
-            {
-                x: 0,
-                y: 0,
-            },
-            {
-                x: 0,
-                y: 0,
-            }
-        ];
+        this.yas = [];
+        this.ball = {};
+        this.absolutePositionValue = [];
+
         this.renderData = {
             stopAnimation: {},
             lastTick: 0,
             tickLength: 20,
             tickCnt: 0,
-            velocity: 2
-        }
+            velocity: 2,
+        };
     }
 
     init() {
@@ -119,36 +82,65 @@ class Yayaya {
 
      initYa() {
          this.yaImage = new Image();
+         this.ballImage = new Image();
          this.yaImage.onload = () => {
-             this.setPosition();
+             this.setYaPosition();
              this.drawYa();
              this.changePosition();
-             this.main(performance.now());
+             this.ballImage.src = './ball.png';
          };
+
+         this.ballImage.onload = () => {
+             this.setBallPosition(1);
+             this.drawBall(1);
+             // this.main(performance.now());
+         };
+
          this.yaImage.src = './cup.png';
      }
 
     drawYa() {
-        const imageWidth = this.canvas.width / 4;
-        const imageHeight = imageWidth * (this.yaImage.height / this.yaImage.width);
+        console.log(this.yas);
         this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
         this.yas.forEach(ya => {
             this.ctx.beginPath();
-            this.ctx.drawImage(this.yaImage, ya.x, ya.y - (imageHeight / 2), imageWidth, imageHeight);
+            this.ctx.drawImage(this.yaImage, ya.x, ya.y, ya.imageInfo.width, ya.imageInfo.height);
             this.ctx.closePath();
         })
     }
 
-    setPosition() {
+    drawBall(position) {
+        console.log(this.ball);
+        this.ctx.beginPath();
+        this.ctx.drawImage(this.ballImage, this.ball.x, this.ball.y, this.ball.imageInfo.width, this.ball.imageInfo.height);
+        this.ctx.closePath();
+    }
+
+    setBallPosition(position) {
+        const ya = this.yas[position];
+        const imageWidth = this.canvas.width / 10;
+        const imageHeight = imageWidth * (this.ballImage.height / this.ballImage.width);
+        const x = (ya.x + (ya.imageInfo.width / 2)) - (imageWidth / 2);
+        const y = ya.y + ya.imageInfo.height - imageHeight;
+        this.ball = new Ball(x, y, {
+            width: imageWidth,
+            height: imageHeight
+        });
+    }
+
+    setYaPosition() {
+        const imageWidth = this.canvas.width / 4;
+        const imageHeight = imageWidth * (this.yaImage.height / this.yaImage.width);
         const eachArea = this.canvas.width / 3;
-        const leftSpace = (eachArea - this.canvas.width / 4) / 2
-        this.yas.forEach((ya, index) => {
+        const leftSpace = (eachArea - this.canvas.width / 4) / 2;
+        [1, 2, 3].forEach((position, index) => {
             const x = eachArea * index + leftSpace;
-            const y = (this.canvas.width / 2);
-            this.yas[index].x = x;
-            this.yas[index].y = y;
-            this.absolutePositionValue[index].x = x;
-            this.absolutePositionValue[index].y = y;
+            const y = (this.canvas.width / 2) - imageHeight / 2;
+            this.yas.push(new Ya(position, x, y, {
+                width: imageWidth,
+                height: imageHeight
+            }));
+            this.absolutePositionValue.push({x, y});
         });
     }
 }
