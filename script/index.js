@@ -11,6 +11,8 @@ class Yayaya {
 
         this.renderData = {
             stopAnimation: {},
+            stopStartAnimation: {},
+            stopEndAnimation: {},
             lastTick: 0,
             tickLength: 20,
             tickCnt: 0,
@@ -40,6 +42,25 @@ class Yayaya {
                 this.moveYa();
             }
         }
+    }
+
+    start(tFrame) {
+        this.renderData.stopStartAnimation = window.requestAnimationFrame( tFrame => this.start(tFrame) );
+
+        if (this.renderData.lastTick + this.renderData.tickLength <= tFrame) {
+            this.renderData.lastTick = tFrame;
+            this.renderData.tickCnt = this.renderData.tickCnt + 1;
+            if (this.checkEndedMoving() || !this.yas.some(ya => ya.isMoving)) {
+                this.changePosition();
+                this.moveYa();
+            } else {
+                this.moveYa();
+            }
+        }
+    }
+
+    end(tFrame) {
+        this.renderData.stopEndAnimation = window.requestAnimationFrame( tFrame => this.end(tFrame) );
     }
 
     changePosition() {
@@ -85,7 +106,7 @@ class Yayaya {
          this.ballImage = new Image();
          this.yaImage.onload = () => {
              this.setYaPosition();
-             this.drawYa();
+             // this.drawYa();
              this.changePosition();
              this.ballImage.src = './ball.png';
          };
@@ -93,14 +114,14 @@ class Yayaya {
          this.ballImage.onload = () => {
              this.setBallPosition(1);
              this.drawBall(1);
-             // this.main(performance.now());
+             this.drawYa();
+             this.main(performance.now());
          };
 
          this.yaImage.src = './cup.png';
      }
 
     drawYa() {
-        console.log(this.yas);
         this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
         this.yas.forEach(ya => {
             this.ctx.beginPath();
@@ -109,8 +130,7 @@ class Yayaya {
         })
     }
 
-    drawBall(position) {
-        console.log(this.ball);
+    drawBall() {
         this.ctx.beginPath();
         this.ctx.drawImage(this.ballImage, this.ball.x, this.ball.y, this.ball.imageInfo.width, this.ball.imageInfo.height);
         this.ctx.closePath();
