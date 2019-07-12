@@ -1,6 +1,7 @@
 import { shuffleArray } from './util.js';
 import Ya from './ya.js';
 import Ball from './ball.js';
+import TimeChecker from './time-checker.js';
 
 class Yayaya {
     constructor() {
@@ -8,12 +9,6 @@ class Yayaya {
         this.yas = [];
         this.ball = {};
         this.absolutePositionValue = [];
-
-        this.gameData = {
-            startTime: new Date().getTime(),
-            endTime: new Date().getTime() + 30000,
-        };
-
         this.renderData = {
             stopAnimation: {},
             stopStartAnimation: {},
@@ -23,6 +18,7 @@ class Yayaya {
             tickCnt: 0,
             velocity: 2,
         };
+        this.timeChecker = new TimeChecker(Date.now());
     }
 
     init() {
@@ -40,7 +36,7 @@ class Yayaya {
             this.renderData.lastTick = tFrame;
             this.renderData.tickCnt = this.renderData.tickCnt + 1;
             if (this.checkEndedMoving() || !this.yas.some(ya => ya.isMoving)) {
-                if (this.renderData.velocity <= 0.1 && this.gameData.endTime < Date.now()) {
+                if (this.renderData.velocity <= 0.1 && this.timeChecker.isResultTime()) {
                     window.cancelAnimationFrame(this.renderData.stopAnimation);
                     setTimeout(() => {
                         this.end(performance.now(), 1, {x: 0, y: this.absolutePositionValue[0].y} )
@@ -56,23 +52,31 @@ class Yayaya {
     }
 
     start(tFrame, step, position) {
-        if (position.y === this.absolutePositionValue[0].y - 50) {
+        if (step === 1 && position.y === this.absolutePositionValue[0].y - 50) {
             step = 2;
+        } else if (step === 2 && position.y === this.absolutePositionValue[0].y) {
+            step = 3;
+        } else if (step ===3 && position.y === this.absolutePositionValue[0].y - 24) {
+            step = 4;
         }
         this.renderData.stopStartAnimation = window.requestAnimationFrame( tFrame => this.start(tFrame, step, position) );
-        if (this.renderData.lastTick + this.renderData.tickLength <= tFrame) {
+        if (this.renderData.lastTick + this.renderData.tickLength <= tFrame && this.timeChecker.isAnimationTime()) {
             this.renderData.lastTick = tFrame;
             this.renderData.tickCnt = this.renderData.tickCnt + 1;
             if (step === 1 && position.y > this.absolutePositionValue[0].y - 50) {
                 position.y -= 2;
             } else if (step === 2 && position.y < this.absolutePositionValue[0].y) {
                 position.y += 2;
+            } else if (step === 3 && position.y > this.absolutePositionValue[0].y - 24) {
+                position.y -= 2;
+            } else if (step === 4 && position.y < this.absolutePositionValue[0].y) {
+                position.y += 2;
             }
             this.yas.forEach(ya => {
                 ya.y = position.y;
             });
             this.render(true);
-            if (step === 2 && position.y === this.absolutePositionValue[0].y) {
+            if (step === 4 && position.y === this.absolutePositionValue[0].y) {
                 window.cancelAnimationFrame(this.renderData.stopStartAnimation);
                 this.main(performance.now());
             }
@@ -107,7 +111,6 @@ class Yayaya {
             this.renderData.velocity -= 0.05;
         }
 
-        console.log(this.renderData.velocity);
         const shuffledArray = shuffleArray(this.yas.map(ya => ya.position));
         shuffledArray.forEach((v, idx) => {
             const ya = this.yas[idx];
@@ -125,7 +128,6 @@ class Yayaya {
     }
 
     checkEndedMoving() {
-        console.table(this.yas);
         return this.yas
             .filter(ya => ya.isMoving)
             .some(ya => {
